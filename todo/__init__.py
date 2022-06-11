@@ -3,17 +3,19 @@ from collections import namedtuple, Counter
 
 Match = namedtuple('Match', ['file', 'lineno', 'line'])
 
-def is_line_comment(line):
+def is_line_comment(line: str):
 	line = line.strip()
 	return line.startswith('#') or line.startswith('//')
 
-def is_todo(line):
+def is_todo(line: str):
 	return line.find('TODO') != -1
 
-def is_empty(line):
+
+def is_empty(line: str):
 	return line.strip() in ['', '*']
 
-def is_end_block_comment(line):
+
+def is_end_block_comment(line: str):
 	return (line.find("'''") != -1 or
 			line.find('"""') != -1 or
 			line.find('*/') != -1 or
@@ -21,9 +23,11 @@ def is_end_block_comment(line):
 			line.find('}}') != -1 or
 			line.find('-#}') != -1)
 
-def is_trailing_comment(line):
+
+def is_trailing_comment(line: str):
 	m = re.search('\S+\s*#\s*TODO.+$', line)
 	return m is not None
+
 
 def expand(match):
 	all_lines = [match.line]
@@ -48,7 +52,8 @@ def expand(match):
 
 	return all_lines
 		
-def extract_names(line):
+	
+def extract_names(line: str):
 	contents = re.findall('TODO\((.*?)\)', line)
 
 	# names must be alphanumeric or _-. Commas and slash OK as seperators.
@@ -64,18 +69,19 @@ def extract_names(line):
 def get_todo_matches():
 	try:
 		matches = subprocess.check_output(['ack', '--with-filename', "TODO\\(.*\\)"])
-	except subprocess.CalledProcessError, e:
-		print e.output
+	except subprocess.CalledProcessError as e:
+		print(e.output)
 		raise e
+		
 	matches = [l for l in matches.split('\n') if l.strip() != '']
 	matches = [l.split(':', 2) for l in matches]
 	matches = [Match(l[0], int(l[1]), l[2]) for l in matches]
 
 	return matches
 
-def interactive(match_names=None, show_count=False):
-	matches = get_todo_matches()
 
+def interactive(match_names = None, show_count: bool = False):
+	matches = get_todo_matches()
 	count = 0
 	count_by_name = Counter()
 
@@ -95,12 +101,13 @@ def interactive(match_names=None, show_count=False):
 			count_by_name[n] += 1
 
 		if not show_count:
-			print '%s:%d' % (match.file, match.lineno), ', '.join(names)
+			print(f"{match.file}, {match.lineno}, {', '.join(names)}")
 			for l in result_lines:
-				print l.strip()
-			print
+				print(l.strip())
+			print()
+			
 	if show_count and match_names != []:
-		print '%d TODOs' % count
+		print(f"{count} TODOs")
 	elif show_count and match_names == []:
 		for name, count in count_by_name.most_common():
-			print name, count
+			print(f"{name} - {count} TODOs}")
